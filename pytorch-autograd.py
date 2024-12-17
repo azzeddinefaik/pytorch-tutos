@@ -1,37 +1,33 @@
 import torch
-import numpy as np
 
-# shape is a tuple of tensor dimensions. In the functions below, it determines the dimensionality of the output tensor.
+# When training neural networks, the most frequently used algorithm is back propagation. 
+# In this algorithm, parameters (model weights) are adjusted according to the gradient of the loss function with respect to the given parameter.
 
-shape = (2,3,)
-rand_tensor = torch.rand(shape)
-ones_tensor = torch.ones(shape)
-zeros_tensor = torch.zeros(shape)
+# Consider the simplest one-layer neural network, with input x, parameters w and b, and some loss function.
+# It can be defined in PyTorch in the following manner:
+# Y = W*X + B
 
-print(f"Random Tensor: \n {rand_tensor} \n")
-print(f"Ones Tensor: \n {ones_tensor} \n")
-print(f"Zeros Tensor: \n {zeros_tensor}")
+x = torch.ones(5)  # input tensor
+y = torch.zeros(3)  # expected output
+w = torch.randn(5, 3, requires_grad=True)
+b = torch.randn(3, requires_grad=True)
+z = torch.matmul(x, w)+b
+loss = torch.nn.functional.binary_cross_entropy_with_logits(z, y)
+# In this network, w and b are parameters, which we need to optimize. 
+# Thus, we need to be able to compute the gradients of loss function with respect to those variables. 
+# In order to do that, we set the requires_grad property of those tensors.
 
-# Tensor attributes describe their shape, datatype, and the device on which they are stored.
+# A function that we apply to tensors to construct computational graph is in fact an object of class Function. 
+# This object knows how to compute the function in the forward direction, 
+# and also how to compute its derivative during the backward propagation step. 
+# A reference to the backward propagation function is stored in grad_fn property of a tensor. 
 
-tensor = torch.rand(3,4)
+print(f"Gradient function for z = {z.grad_fn}")
+print(f"Gradient function for loss = {loss.grad_fn}")
 
-print(f"Shape of tensor: {tensor.shape}")
-print(f"Datatype of tensor: {tensor.dtype}")
-print(f"Device tensor is stored on: {tensor.device}")
+# optimize weights of parameters in the neural network, 
+# we need to compute the derivatives of our loss function with respect to parameters, namely, we need &loss/&w and &loss/&b under some fixed values of x and y. To compute those derivatives, we call loss.backward(), and then retrieve the values from w.grad and b.grad:
 
-# We move our tensor to the GPU if available
-if torch.cuda.is_available():
-  tensor = tensor.to('cuda')
-
-tensor = torch.ones(4, 4)
-print('First row: ',tensor[0])
-print('First column: ', tensor[:, 0])
-print('Last column:', tensor[..., -1])
-# modify
-tensor[:,1] = 0
-print(tensor)
-
-# concatenate multiple tensors
-t1 = torch.cat([tensor, tensor, tensor], dim=1)
-print(t1)
+loss.backward()
+print(w.grad)
+print(b.grad)
